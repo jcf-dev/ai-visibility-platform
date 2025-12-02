@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RunsTable } from "@/components/RunsTable";
 import { Skeleton } from "@/components/ui/skeleton";
 import {

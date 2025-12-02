@@ -12,7 +12,7 @@ export default function DashboardLayout({
 }) {
   const router = useRouter();
 
-  const handleRunCreated = (newRun: any) => {
+  const handleRunCreated = (newRun?: { id: string }) => {
     if (newRun && newRun.id) {
       router.push(`/runs/${newRun.id}`);
     }

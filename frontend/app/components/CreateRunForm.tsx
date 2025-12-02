@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { MultiSelect, GroupedOption } from "@/components/ui/multi-select";
 
 interface CreateRunFormProps {
-  onRunCreated?: (run?: any) => void;
+  onRunCreated?: (run?: { id: string }) => void;
 }
 
 export default function CreateRunForm({ onRunCreated }: CreateRunFormProps) {
