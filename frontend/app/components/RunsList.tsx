@@ -3,6 +3,15 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RunsTable } from "@/components/RunsTable";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Run {
   id: string;
@@ -47,17 +56,59 @@ export default function RunsList({ refreshKey }: { refreshKey: number }) {
   }, [runs]);
 
   if (loading && runs.length === 0) {
-    return <div className="text-center mt-8">Loading runs...</div>;
+    return (
+      <div className="w-full h-full">
+        <div className="mb-6 flex items-center justify-between">
+          <h2 className="text-2xl font-bold tracking-tight">Past Runs</h2>
+        </div>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead className="text-center">Status</TableHead>
+                <TableHead className="text-center">Brands</TableHead>
+                <TableHead className="text-center">Prompts</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[...Array(5)].map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell>
+                    <Skeleton className="h-4 w-20" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-32" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-6 w-16 mx-auto" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-8 mx-auto" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-8 mx-auto" />
+                  </TableCell>
+                  <TableCell>
+                    <Skeleton className="h-8 w-16 mx-auto" />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <Card className="w-full h-full">
-      <CardHeader>
-        <CardTitle>Past Runs</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <RunsTable runs={runs} />
-      </CardContent>
-    </Card>
+    <div className="w-full h-full">
+      <div className="mb-6 flex items-center justify-between">
+        <h2 className="text-2xl font-bold tracking-tight">Past Runs</h2>
+      </div>
+      <RunsTable runs={runs} />
+    </div>
   );
 }

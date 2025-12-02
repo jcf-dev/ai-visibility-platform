@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { MultiSelect, GroupedOption } from "@/components/ui/multi-select";
 
 interface CreateRunFormProps {
-  onRunCreated?: () => void;
+  onRunCreated?: (run?: any) => void;
 }
 
 export default function CreateRunForm({ onRunCreated }: CreateRunFormProps) {
@@ -73,9 +73,9 @@ export default function CreateRunForm({ onRunCreated }: CreateRunFormProps) {
         throw new Error(`Error: ${res.statusText}`);
       }
 
-      await res.json();
+      const data = await res.json();
       if (onRunCreated) {
-        onRunCreated();
+        onRunCreated(data);
       }
       // Reset form or show success message?
       // For now, just keeping the form as is or maybe clearing it?

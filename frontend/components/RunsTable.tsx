@@ -56,12 +56,12 @@ export function RunsTable({ runs }: RunsTableProps) {
                 </TableCell>
                 <TableCell className="text-center">
                   <Badge
-                    variant={
+                    className={
                       run.status === "completed"
-                        ? "default"
+                        ? "bg-green-500 hover:bg-green-600"
                         : run.status === "failed"
-                        ? "destructive"
-                        : "secondary"
+                        ? "bg-red-500 hover:bg-red-600"
+                        : "bg-yellow-500 hover:bg-yellow-600"
                     }
                   >
                     {run.status}
