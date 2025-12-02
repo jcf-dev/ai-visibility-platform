@@ -48,7 +48,7 @@ A minimal engine to track brand visibility across LLM responses.
    #### Google Gemini
    1. Set `LLM_PROVIDER=gemini` in your `.env` file.
    2. Add your API key to `GEMINI_API_KEY`.
-   3. When creating a run, use models like `gemini-1.5-flash` or `gemini-1.5-pro`.
+   3. When creating a run, use models like `gemini-2.0-flash` or `gemini-2.0-pro`.
 
    #### Multi-Provider (Parallel Execution)
    To use multiple providers in the same run (e.g., compare OpenAI vs Gemini):
@@ -56,7 +56,7 @@ A minimal engine to track brand visibility across LLM responses.
    2. Ensure both `OPENAI_API_KEY` and `GEMINI_API_KEY` are set.
    3. When creating a run, specify models from different providers:
       ```json
-      "models": ["gpt-4", "gemini-1.5-flash", "mock-model"]
+      "models": ["gpt-4", "gemini-2.0-flash", "mock-model"]
       ```
    The system will automatically route requests to the correct provider in parallel.
 
@@ -78,7 +78,7 @@ A minimal engine to track brand visibility across LLM responses.
     "What is the best cloud provider?",
     "Who makes the best anvils?"
   ],
-  "models": ["gpt-3.5-turbo", "gemini-1.5-flash"],
+  "models": ["gpt-3.5-turbo", "gemini-2.0-flash"],
   "notes": "Benchmark run #1"
 }
 ```
@@ -96,9 +96,17 @@ When configuring a run, you can use the following model identifiers. The system 
 
 ### Google Gemini
 *Requires `GEMINI_API_KEY`*
-- `gemini-1.5-pro`
-- `gemini-1.5-flash`
-- `gemini-1.0-pro`
+
+Common models (names may vary by region/version):
+- `gemini-2.0-flash`
+- `gemini-2.0-pro`
+- `gemini-1.5-flash` (if available)
+
+To see the exact list of models available to your API key, run:
+```bash
+python scripts/list_gemini_models.py
+```
+Use the full model name (e.g., `gemini-2.0-flash-001`) if the short alias doesn't work.
 
 ### Mock (Testing)
 - `mock-model` (or any string starting with `mock-`)

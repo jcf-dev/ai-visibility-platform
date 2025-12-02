@@ -1,20 +1,22 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
+
 class Settings(BaseSettings):
     PROJECT_NAME: str = "AI Visibility Platform"
     DATABASE_URL: str = "sqlite+aiosqlite:///./ai_visibility.db"
-    
+
     # LLM Configuration (Mock by default)
     LLM_PROVIDER: str = "mock"  # options: mock, openai, gemini, auto
     OPENAI_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None
-    
+
     # Rate Limiting
     MAX_CONCURRENT_REQUESTS: int = 5
     REQUEST_TIMEOUT_SECONDS: int = 30
 
     model_config = SettingsConfigDict(env_file=".env")
+
 
 settings = Settings()

@@ -9,3 +9,10 @@ test:
 
 run-sample:
 	python scripts/run_sample.py
+
+format:
+	black .
+
+lint:
+	flake8 .
+
