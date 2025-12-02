@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import httpx
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
 from uuid import UUID
 from app.features.runs.models import Run, Prompt, Brand, Response, ResponseBrandMention
@@ -72,9 +72,29 @@ class Orchestrator:
         self, run_id: UUID, prompt: Prompt, model: str, brands: list[Brand]
     ):
         async with self.semaphore:
+            # Rate limiting delay
+            if settings.RATE_LIMIT_DELAY_SECONDS > 0:
+                await asyncio.sleep(settings.RATE_LIMIT_DELAY_SECONDS)
+
             # We create a NEW session for each task or small batch to avoid
             # long-lived session issues and to allow partial commits.
             async with self.db_session_factory() as session:
+                # Idempotency Check: Avoid re-processing if successful response exists
+                existing_stmt = select(Response).where(
+                    and_(
+                        Response.run_id == run_id,
+                        Response.prompt_id == prompt.id,
+                        Response.model == model,
+                        Response.error.is_(None),  # Only skip if successful
+                    )
+                )
+                existing = await session.execute(existing_stmt)
+                if existing.scalars().first():
+                    logger.info(
+                        f"Skipping duplicate prompt {prompt.id} for model {model} in run {run_id}"
+                    )
+                    return
+
                 try:
                     # Call LLM
                     llm_response = await self.llm_provider.generate(prompt.text, model)

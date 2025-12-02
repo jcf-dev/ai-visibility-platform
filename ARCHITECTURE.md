@@ -32,20 +32,27 @@ The AI Visibility Platform is designed as a lightweight, asynchronous service to
     - `ResponseBrandMention`: Derived analysis data.
 - **Why SQLite**: Zero-config, sufficient for the assignment. Easily swappable for Postgres via connection string.
 
-## Scalability & Reliability
+## Systems Thinking: Scaling to 100k Prompts/Day
 
-### Handling 100k+ Prompts
-If we needed to scale to 100k prompts/day:
+If this system had to handle 100k prompts/day across multiple models, here's what I'd change:
 
-1.  **Queue System**: Replace `BackgroundTasks` with a robust queue like **Celery** or **Redis Queue (RQ)**. This allows distributing work across multiple worker nodes.
-2.  **Database**: Migrate to **PostgreSQL**. Use connection pooling (PgBouncer) to handle high concurrency.
-3.  **Rate Limiting**: Implement a distributed rate limiter (e.g., using Redis) instead of in-process Semaphores, to coordinate across multiple worker instances.
-4.  **Batching**: Send prompts to LLMs in batches if the API supports it (e.g., OpenAI Batch API) to reduce overhead and cost.
+1.  **Queue-Based Architecture**: Replace the in-memory `asyncio` tasks with a durable job queue (e.g., Celery with Redis/RabbitMQ or AWS SQS). This ensures tasks persist across server restarts and allows independent scaling of workers.
+2.  **Distributed Rate Limiting**: Move from a local semaphore to a distributed rate limiter (e.g., using Redis) to coordinate limits across multiple worker instances and respect strict provider quotas (TPM/RPM).
+3.  **Database Optimization**:
+    *   Use batch inserts for `Response` and `ResponseBrandMention` records instead of inserting one by one.
+    *   Add database indexes on frequently queried fields (e.g., `run_id`, `created_at`) to speed up reporting.
+    *   Consider a read replica for heavy reporting queries.
+    *   Migrate from SQLite to **PostgreSQL** with connection pooling (PgBouncer) for high concurrency.
+4.  **Observability**: Implement structured logging and metrics (Prometheus/Grafana) to track success rates, latency percentiles, and token usage per provider in real-time.
+5.  **Cost Management**: Add a budget tracking layer to pause runs if they exceed a daily spend limit, as 100k prompts can get expensive quickly.
+6.  **Data Pipeline**: For massive scale analysis, offload completed run data to a data warehouse (e.g., BigQuery, Snowflake) for complex analytics, keeping the operational DB lean.
 
-### Reliability
+## Current Reliability Features
+
 - **Idempotency**: Runs are unique entities. Re-running the same config creates a new Run ID.
-- **Retries**: Network glitches are handled by `tenacity`.
+- **Retries**: Network glitches are handled by `tenacity` with exponential backoff.
 - **Timeouts**: `httpx` timeouts ensure we don't hang forever.
+- **Concurrency Control**: Uses `asyncio.Semaphore` to limit parallel LLM calls within a single instance.
 
 ## Trade-offs
 - **Analysis**: Currently uses simple string matching. In production, this might need NLP or fuzzy matching to catch variations (e.g., "Acme Corp" vs "Acme").

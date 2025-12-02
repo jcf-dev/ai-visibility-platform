@@ -10,13 +10,12 @@ async def main():
 
     # 1. Create a Run
     payload = {
-        "brands": ["Acme", "Contoso", "Globex"],
+        "brands": ["AWS", "Digital Ocean", "Azure"],
         "prompts": [
             "What is the best cloud provider for enterprise?",
-            "Who makes the most durable anvils?",
-            "Top 5 companies for B2B payments?",
+            "Cheapest cloud services for startups?",
         ],
-        "models": ["mock-model"],
+        "models": ["gemini-2.0-flash"],
         "notes": "Sample CLI Run",
     }
 
