@@ -25,6 +25,7 @@ A minimal engine to track brand visibility across LLM responses.
    PROJECT_NAME="AI Visibility Platform"
    MAX_CONCURRENT_REQUESTS=5
    REQUEST_TIMEOUT_SECONDS=30
+   RATE_LIMIT_DELAY_SECONDS=0.1
 
    # Choose Provider: mock, openai, gemini, or auto
    LLM_PROVIDER=mock
