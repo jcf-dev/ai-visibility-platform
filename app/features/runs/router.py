@@ -3,6 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from uuid import UUID, uuid4
+import hashlib
+import json
 
 from app.infrastructure.database import get_db, AsyncSessionLocal
 from app.features.runs.models import Run, Brand, Prompt, Response, ResponseBrandMention
@@ -32,6 +34,16 @@ async def list_models():
     return {}
 
 
+def _calculate_input_hash(brands: list[str], prompts: list[str], models: list[str]) -> str:
+    data = {
+        "brands": sorted(brands),
+        "prompts": sorted(prompts),
+        "models": sorted(models),
+    }
+    serialized = json.dumps(data, sort_keys=True)
+    return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+
+
 @router.post(
     "/runs",
     response_model=RunRead,
@@ -46,8 +58,31 @@ async def create_run(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
 ):
+    # Calculate hash to avoid duplicate runs
+    input_hash = _calculate_input_hash(run_in.brands, run_in.prompts, run_in.models)
+
+    # Check for existing run (excluding failed ones, which we might want to retry)
+    stmt = (
+        select(Run)
+        .options(selectinload(Run.brands), selectinload(Run.prompts))
+        .where(
+            Run.input_hash == input_hash,
+            Run.status.in_(["pending", "running", "completed"]),
+        )
+    )
+    result = await db.execute(stmt)
+    existing_run = result.scalars().first()
+
+    if existing_run:
+        return existing_run
+
     # 1. Create Run Record
-    new_run = Run(id=uuid4(), notes=run_in.notes, status="pending")
+    new_run = Run(
+        id=uuid4(),
+        notes=run_in.notes,
+        status="pending",
+        input_hash=input_hash,
+    )
     db.add(new_run)
     await db.flush()  # Get ID
 

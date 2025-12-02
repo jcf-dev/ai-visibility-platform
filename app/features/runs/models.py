@@ -22,6 +22,7 @@ class Run(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     status = Column(String, default="pending")  # pending, running, completed, failed
     notes = Column(String, nullable=True)
+    input_hash = Column(String, index=True, nullable=True)
 
     brands = relationship("Brand", back_populates="run", cascade="all, delete-orphan")
     prompts = relationship("Prompt", back_populates="run", cascade="all, delete-orphan")
