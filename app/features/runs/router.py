@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, insert
 from sqlalchemy.orm import selectinload
 from uuid import UUID, uuid4
 import hashlib
 import json
 
 from app.infrastructure.database import get_db, AsyncSessionLocal
-from app.features.runs.models import Run, Brand, Prompt, Response, ResponseBrandMention
+from app.features.runs.models import Run, Brand, Prompt, Response, ResponseBrandMention, run_brands, run_prompts
+from app.features.runs.service import get_or_create_brand, get_or_create_prompt
 from app.features.runs.schemas import (
     RunCreate,
     RunRead,
@@ -86,12 +87,20 @@ async def create_run(
     db.add(new_run)
     await db.flush()  # Get ID
 
-    # 2. Create Brands and Prompts
+    # 2. Get or Create Brands and Prompts (case-insensitive upsert)
     for brand_name in run_in.brands:
-        db.add(Brand(run_id=new_run.id, name=brand_name))
-
+        brand = await get_or_create_brand(db, brand_name)
+        # Insert into association table
+        await db.execute(
+            insert(run_brands).values(run_id=new_run.id, brand_id=brand.id)
+        )
+    
     for prompt_text in run_in.prompts:
-        db.add(Prompt(run_id=new_run.id, text=prompt_text))
+        prompt = await get_or_create_prompt(db, prompt_text)
+        # Insert into association table
+        await db.execute(
+            insert(run_prompts).values(run_id=new_run.id, prompt_id=prompt.id)
+        )
 
     await db.commit()
 
@@ -202,7 +211,7 @@ async def get_run_summary(run_id: UUID, db: AsyncSession = Depends(get_db)):
     # We need to join tables.
 
     # 1. Get Brands
-    brands_result = await db.execute(select(Brand).where(Brand.run_id == run_id))
+    brands_result = await db.execute(select(Brand).join(Brand.runs).where(Run.id == run_id))
     brands = brands_result.scalars().all()
 
     # 2. Get Counts
@@ -217,7 +226,7 @@ async def get_run_summary(run_id: UUID, db: AsyncSession = Depends(get_db)):
     total_responses = (await db.execute(total_responses_query)).scalar() or 0
 
     # Total prompts configured
-    total_prompts_query = select(func.count(Prompt.id)).where(Prompt.run_id == run_id)
+    total_prompts_query = select(func.count(Prompt.id)).join(Prompt.runs).where(Run.id == run_id)
     total_prompts = (await db.execute(total_prompts_query)).scalar() or 0
 
     if total_responses == 0:

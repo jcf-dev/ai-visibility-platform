@@ -1,8 +1,8 @@
 import pytest
 from app.features.runs.service import Orchestrator
-from app.features.runs.models import Run, Brand, Prompt
+from app.features.runs.models import Run, Brand, Prompt, run_brands, run_prompts
 from app.infrastructure.database import AsyncSessionLocal, engine, Base
-from sqlalchemy import select
+from sqlalchemy import select, insert
 from sqlalchemy.orm import selectinload
 
 
@@ -23,8 +23,17 @@ async def test_orchestrator_flow():
         session.add(run)
         await session.flush()
 
-        session.add(Brand(run_id=run.id, name="Acme"))
-        session.add(Prompt(run_id=run.id, text="Test Prompt"))
+        brand = Brand(name="Acme")
+        session.add(brand)
+        await session.flush()
+        
+        prompt = Prompt(text="Test Prompt")
+        session.add(prompt)
+        await session.flush()
+        
+        await session.execute(insert(run_brands).values(run_id=run.id, brand_id=brand.id))
+        await session.execute(insert(run_prompts).values(run_id=run.id, prompt_id=prompt.id))
+        
         await session.commit()
         run_id = run.id
 
@@ -52,8 +61,17 @@ async def test_orchestrator_multi_model():
         session.add(run)
         await session.flush()
 
-        session.add(Brand(run_id=run.id, name="Acme"))
-        session.add(Prompt(run_id=run.id, text="Test Prompt"))
+        brand = Brand(name="Acme")
+        session.add(brand)
+        await session.flush()
+        
+        prompt = Prompt(text="Test Prompt")
+        session.add(prompt)
+        await session.flush()
+        
+        await session.execute(insert(run_brands).values(run_id=run.id, brand_id=brand.id))
+        await session.execute(insert(run_prompts).values(run_id=run.id, prompt_id=prompt.id))
+        
         await session.commit()
         run_id = run.id
 

@@ -1,14 +1,49 @@
 import asyncio
 import logging
 import httpx
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func as sqlfunc
 from sqlalchemy.orm import selectinload
+from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from app.features.runs.models import Run, Prompt, Brand, Response, ResponseBrandMention
 from app.infrastructure.llm.client import get_llm_provider
 from app.infrastructure.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+async def get_or_create_brand(db: AsyncSession, name: str) -> Brand:
+    """Get or create a brand with case-insensitive matching."""
+    # Search case-insensitively
+    stmt = select(Brand).where(sqlfunc.lower(Brand.name) == name.lower())
+    result = await db.execute(stmt)
+    brand = result.scalars().first()
+    
+    if brand:
+        return brand
+    
+    # Create new brand
+    brand = Brand(name=name)
+    db.add(brand)
+    await db.flush()
+    return brand
+
+
+async def get_or_create_prompt(db: AsyncSession, text: str) -> Prompt:
+    """Get or create a prompt with case-insensitive matching."""
+    # Search case-insensitively
+    stmt = select(Prompt).where(sqlfunc.lower(Prompt.text) == text.lower())
+    result = await db.execute(stmt)
+    prompt = result.scalars().first()
+    
+    if prompt:
+        return prompt
+    
+    # Create new prompt
+    prompt = Prompt(text=text)
+    db.add(prompt)
+    await db.flush()
+    return prompt
 
 
 class Orchestrator:

@@ -8,11 +8,28 @@ from sqlalchemy import (
     Text,
     Float,
     Uuid,
+    Table,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.infrastructure.database import Base
 import uuid
+
+
+# Association tables for many-to-many relationships
+run_brands = Table(
+    "run_brands",
+    Base.metadata,
+    Column("run_id", Uuid, ForeignKey("runs.id"), primary_key=True),
+    Column("brand_id", Integer, ForeignKey("brands.id"), primary_key=True),
+)
+
+run_prompts = Table(
+    "run_prompts",
+    Base.metadata,
+    Column("run_id", Uuid, ForeignKey("runs.id"), primary_key=True),
+    Column("prompt_id", Integer, ForeignKey("prompts.id"), primary_key=True),
+)
 
 
 class Run(Base):
@@ -24,8 +41,8 @@ class Run(Base):
     notes = Column(String, nullable=True)
     input_hash = Column(String, index=True, nullable=True)
 
-    brands = relationship("Brand", back_populates="run", cascade="all, delete-orphan")
-    prompts = relationship("Prompt", back_populates="run", cascade="all, delete-orphan")
+    brands = relationship("Brand", secondary=run_brands, back_populates="runs")
+    prompts = relationship("Prompt", secondary=run_prompts, back_populates="runs")
     responses = relationship(
         "Response", back_populates="run", cascade="all, delete-orphan"
     )
@@ -35,10 +52,9 @@ class Brand(Base):
     __tablename__ = "brands"
 
     id = Column(Integer, primary_key=True, index=True)
-    run_id = Column(Uuid, ForeignKey("runs.id"))
-    name = Column(String, index=True)
+    name = Column(String, unique=True, index=True)  # case-insensitive unique
 
-    run = relationship("Run", back_populates="brands")
+    runs = relationship("Run", secondary=run_brands, back_populates="brands")
     mentions = relationship("ResponseBrandMention", back_populates="brand")
 
 
@@ -46,10 +62,9 @@ class Prompt(Base):
     __tablename__ = "prompts"
 
     id = Column(Integer, primary_key=True, index=True)
-    run_id = Column(Uuid, ForeignKey("runs.id"))
-    text = Column(Text)
+    text = Column(Text, unique=True)  # case-insensitive unique
 
-    run = relationship("Run", back_populates="prompts")
+    runs = relationship("Run", secondary=run_prompts, back_populates="prompts")
     responses = relationship("Response", back_populates="prompt")
 
 

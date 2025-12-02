@@ -47,3 +47,50 @@ async def test_duplicate_run_deduplication():
         run_id3 = data3["id"]
         
         assert run_id1 != run_id3
+
+
+@pytest.mark.asyncio
+async def test_case_insensitive_brand_and_prompt_upsert():
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        # First run with "BrandA" and "Prompt 1"
+        response1 = await ac.post("/api/runs", json={
+            "brands": ["BrandA"],
+            "prompts": ["Prompt 1"],
+            "models": ["mock-model"],
+        })
+        assert response1.status_code == 201
+        data1 = response1.json()
+        brand_id1 = data1["brands"][0]["id"]
+        prompt_id1 = data1["prompts"][0]["id"]
+        
+        # Second run with "branda" (lowercase) and "prompt 1" (lowercase)
+        response2 = await ac.post("/api/runs", json={
+            "brands": ["branda"],
+            "prompts": ["prompt 1"],
+            "models": ["mock-model"],
+        })
+        assert response2.status_code == 201
+        data2 = response2.json()
+        brand_id2 = data2["brands"][0]["id"]
+        prompt_id2 = data2["prompts"][0]["id"]
+        
+        # Should reuse the same brand and prompt (case-insensitive)
+        assert brand_id1 == brand_id2
+        assert prompt_id1 == prompt_id2
+        
+        # Third run with "BRANDA" (uppercase)
+        response3 = await ac.post("/api/runs", json={
+            "brands": ["BRANDA"],
+            "prompts": ["PROMPT 1"],
+            "models": ["mock-model"],
+        })
+        assert response3.status_code == 201
+        data3 = response3.json()
+        brand_id3 = data3["brands"][0]["id"]
+        prompt_id3 = data3["prompts"][0]["id"]
+        
+        # Should still reuse the same brand and prompt
+        assert brand_id1 == brand_id3
+        assert prompt_id1 == prompt_id3
+

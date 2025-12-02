@@ -8,6 +8,8 @@ A minimal engine to track brand visibility across LLM responses.
 - **Visibility Metrics**: Automatically detects if brands are mentioned in responses.
 - **Scalable Design**: Uses async/await, connection pooling, and background tasks.
 - **Resilient**: Retries on failure, handles timeouts.
+- **Smart Deduplication**: Re-submitting the same run (same brands, prompts, models) returns the existing run instead of duplicating work.
+- **Efficient Storage**: Brands and prompts are stored uniquely (case-insensitive) and reused across runs.
 
 ## Setup
 
@@ -83,6 +85,8 @@ A minimal engine to track brand visibility across LLM responses.
   "notes": "Benchmark run #1"
 }
 ```
+
+> **Note**: If you submit a run with the exact same brands, prompts, and models as a previous run (that hasn't failed), the system will return the existing run ID to avoid duplicate processing.
 
 ## Available Models
 

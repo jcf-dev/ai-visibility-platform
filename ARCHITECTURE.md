@@ -26,9 +26,15 @@ The AI Visibility Platform is designed as a lightweight, asynchronous service to
 ### 4. Data Layer (SQLAlchemy + SQLite)
 - **Role**: Persistence.
 - **Schema**:
-    - `Run`: Top-level container.
-    - `Brand` / `Prompt`: Configuration for a specific run (snapshot).
+    - `Run`: Top-level container with `input_hash` for deduplication.
+    - `Brand` / `Prompt`: Shared entities with case-insensitive uniqueness (reused across runs).
+    - `run_brands` / `run_prompts`: Many-to-many association tables.
     - `Response`: The raw output and metadata.
     - `ResponseBrandMention`: Derived analysis data.
 - **Why SQLite**: Zero-config, sufficient for the assignment. Easily swappable for Postgres via connection string.
+
+#### Schema Design: Many-to-Many Relationships
+- **Brands and Prompts are Shared**: Instead of duplicating brand/prompt data per run, they are stored once and associated with multiple runs via junction tables.
+- **Case-Insensitive Upsert**: The system uses `LOWER()` SQL function to match brands and prompts case-insensitively. "OpenAI", "openai", and "OPENAI" are treated as the same entity.
+- **Benefits**: Reduced storage, better data integrity, enables historical analysis across runs.
 
