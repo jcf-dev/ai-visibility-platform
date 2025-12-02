@@ -272,8 +272,8 @@ class MultiProviderRouter:
         if self.default_provider in self.providers and self.default_provider != "auto":
             return await self.providers[self.default_provider].generate(prompt, model)
 
-        # 3. If auto and no match, default to mock for safety
-        return await self.providers["mock"].generate(prompt, model)
+        # 3. If auto and no match, raise error
+        raise ValueError(f"Could not determine LLM provider for model '{model}'")
 
     async def list_models(self) -> Dict[str, list[str]]:
         results = {}
