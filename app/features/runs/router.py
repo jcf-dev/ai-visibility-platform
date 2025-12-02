@@ -13,8 +13,22 @@ from app.features.runs.schemas import (
     BrandVisibilityMetric,
 )
 from app.features.runs.service import Orchestrator
+from app.infrastructure.llm.client import get_llm_provider
 
 router = APIRouter(tags=["Runs"])
+
+
+@router.get(
+    "/models",
+    summary="List available models",
+    description="Fetch available models from all configured providers.",
+)
+async def list_models():
+    provider = get_llm_provider()
+    # The MultiProviderRouter has a list_models method
+    if hasattr(provider, "list_models"):
+        return await provider.list_models()
+    return {}
 
 
 @router.post(

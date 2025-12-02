@@ -94,6 +94,11 @@ When configuring a run, you can use the following model identifiers. The system 
 - `gpt-4`
 - `gpt-3.5-turbo`
 
+To see the exact list of models available to your API key, run:
+```bash
+python scripts/list_openai_models.py
+```
+
 ### Google Gemini
 *Requires `GEMINI_API_KEY`*
 
@@ -110,3 +115,18 @@ Use the full model name (e.g., `gemini-2.0-flash-001`) if the short alias doesn'
 
 ### Mock (Testing)
 - `mock-model` (or any string starting with `mock-`)
+
+## API Endpoints
+
+### List Models
+**GET** `/api/models`
+
+Returns a list of available models from all configured providers.
+
+```json
+{
+  "openai": ["gpt-4o", "gpt-3.5-turbo", ...],
+  "gemini": ["gemini-2.0-flash", ...],
+  "mock": ["mock-model", ...]
+}
+```

@@ -107,9 +107,7 @@ class Orchestrator:
                 except Exception as e:
                     error_msg = str(e)
                     if isinstance(e, httpx.HTTPStatusError):
-                        error_msg = (
-                            f"HTTP {e.response.status_code}: {e.response.text}"
-                        )
+                        error_msg = f"HTTP {e.response.status_code}: {e.response.text}"
 
                     logger.error(f"Error processing prompt {prompt.id}: {error_msg}")
 

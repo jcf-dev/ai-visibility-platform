@@ -38,6 +38,8 @@ class LLMResponse:
 class LLMProvider(Protocol):
     async def generate(self, prompt: str, model: str) -> LLMResponse: ...
 
+    async def list_models(self) -> list[str]: ...
+
 
 class MockLLMProvider:
     """
@@ -46,6 +48,9 @@ class MockLLMProvider:
     To make it useful for testing visibility, we might want to inject behavior,
     but for now let's just return random text that MIGHT contain brands.
     """
+
+    async def list_models(self) -> list[str]:
+        return ["mock-model", "mock-gpt-4", "mock-gemini"]
 
     @retry(
         stop=stop_after_attempt(3),
@@ -89,6 +94,26 @@ class OpenAILLMProvider:
     def __init__(self):
         self.api_key = settings.OPENAI_API_KEY
         self.base_url = "https://api.openai.com/v1/chat/completions"
+        self.models_url = "https://api.openai.com/v1/models"
+
+    async def list_models(self) -> list[str]:
+        if not self.api_key:
+            return []
+
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(
+                    self.models_url,
+                    headers={"Authorization": f"Bearer {self.api_key}"},
+                    timeout=10.0,
+                )
+                response.raise_for_status()
+                data = response.json()
+                # Sort models by id for easier reading
+                models = sorted(data.get("data", []), key=lambda x: x["id"])
+                return [m["id"] for m in models]
+            except Exception:
+                return []
 
     @retry(
         stop=stop_after_attempt(3),
@@ -141,6 +166,29 @@ class GeminiLLMProvider:
         # Note: The base URL for generation is slightly different than listing models
         # But we construct the full URL in generate()
         self.base_url = "https://generativelanguage.googleapis.com/v1beta/models"
+
+    async def list_models(self) -> list[str]:
+        if not self.api_key:
+            return []
+
+        async with httpx.AsyncClient() as client:
+            try:
+                response = await client.get(
+                    f"{self.base_url}?key={self.api_key}", timeout=10.0
+                )
+                response.raise_for_status()
+                data = response.json()
+                models = []
+                for model in data.get("models", []):
+                    methods = model.get("supportedGenerationMethods", [])
+                    if "generateContent" in methods:
+                        name = model.get("name")
+                        if name.startswith("models/"):
+                            name = name.replace("models/", "")
+                        models.append(name)
+                return models
+            except Exception:
+                return []
 
     @retry(
         stop=stop_after_attempt(3),
@@ -226,6 +274,27 @@ class MultiProviderRouter:
 
         # 3. If auto and no match, default to mock for safety
         return await self.providers["mock"].generate(prompt, model)
+
+    async def list_models(self) -> Dict[str, list[str]]:
+        results = {}
+        # Run in parallel
+        tasks = []
+        names = []
+
+        for name, provider in self.providers.items():
+            if hasattr(provider, "list_models"):
+                names.append(name)
+                tasks.append(provider.list_models())
+
+        if tasks:
+            lists = await asyncio.gather(*tasks, return_exceptions=True)
+            for name, result in zip(names, lists):
+                if isinstance(result, list):
+                    results[name] = result
+                else:
+                    results[name] = []
+
+        return results
 
 
 def get_llm_provider(provider_name: str = settings.LLM_PROVIDER) -> LLMProvider:
