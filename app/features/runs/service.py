@@ -91,7 +91,8 @@ class Orchestrator:
                 existing = await session.execute(existing_stmt)
                 if existing.scalars().first():
                     logger.info(
-                        f"Skipping duplicate prompt {prompt.id} for model {model} in run {run_id}"
+                        f"Skipping duplicate prompt {prompt.id} "
+                        f"for model {model} in run {run_id}"
                     )
                     return
 

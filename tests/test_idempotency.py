@@ -30,7 +30,9 @@ async def test_idempotency():
 
     # 2. Mock LLM Provider
     mock_provider = AsyncMock()
-    mock_provider.generate.return_value = LLMResponse(text="Response with Acme", latency_ms=100)
+    mock_provider.generate.return_value = LLMResponse(
+        text="Response with Acme", latency_ms=100
+    )
 
     orchestrator = Orchestrator(AsyncSessionLocal)
     orchestrator.llm_provider = mock_provider
@@ -75,7 +77,9 @@ async def test_error_handling():
         assert run.status == "failed"
 
         # Verify Error Response was saved
-        result = await session.execute(select(Response).where(Response.run_id == run_id))
+        result = await session.execute(
+            select(Response).where(Response.run_id == run_id)
+        )
         response = result.scalars().first()
         assert response is not None
         assert response.error == "LLM Failed"

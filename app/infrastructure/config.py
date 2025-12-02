@@ -15,7 +15,9 @@ class Settings(BaseSettings):
     # Rate Limiting
     MAX_CONCURRENT_REQUESTS: int = 5
     REQUEST_TIMEOUT_SECONDS: int = 30
-    RATE_LIMIT_DELAY_SECONDS: float = 0.1  # Delay between requests to respect rate limits
+    RATE_LIMIT_DELAY_SECONDS: float = (
+        0.1  # Delay between requests to respect rate limits
+    )
 
     model_config = SettingsConfigDict(env_file=".env")
 
