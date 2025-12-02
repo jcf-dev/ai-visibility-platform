@@ -8,19 +8,34 @@ from app.features.runs.models import Run, Prompt, Brand, Response, ResponseBrand
 from app.infrastructure.llm.client import get_llm_provider
 from app.infrastructure.config import settings
 
+from app.features.settings.models import ApiKey
+from app.infrastructure.security import decrypt_value
+
 logger = logging.getLogger(__name__)
 
 
 class Orchestrator:
     def __init__(self, db_session_factory):
         self.db_session_factory = db_session_factory
-        self.llm_provider = get_llm_provider()
+        # We don't initialize llm_provider here anymore because we need to fetch keys
+        # self.llm_provider = get_llm_provider()
         self.semaphore = asyncio.Semaphore(settings.MAX_CONCURRENT_REQUESTS)
+
+    async def _get_configured_llm_provider(self):
+        async with self.db_session_factory() as session:
+            result = await session.execute(select(ApiKey))
+            keys = {
+                k.provider: decrypt_value(k.api_key) for k in result.scalars().all()
+            }
+            return get_llm_provider(api_keys=keys)
 
     async def process_run(self, run_id: UUID, models: list[str]):
         """
         Main entry point to process a run in the background.
         """
+        # Initialize provider with keys from DB
+        llm_provider = await self._get_configured_llm_provider()
+
         async with self.db_session_factory() as session:
             # 1. Fetch Run Details
             result = await session.execute(
@@ -45,7 +60,9 @@ class Orchestrator:
             for prompt in prompts:
                 for model in models:
                     tasks.append(
-                        self._process_single_prompt(run_id, prompt, model, brands)
+                        self._process_single_prompt(
+                            run_id, prompt, model, brands, llm_provider
+                        )
                     )
 
             # 3. Execute with concurrency control
@@ -69,7 +86,12 @@ class Orchestrator:
             logger.info(f"Run {run_id} completed. Failed tasks: {failed_count}")
 
     async def _process_single_prompt(
-        self, run_id: UUID, prompt: Prompt, model: str, brands: list[Brand]
+        self,
+        run_id: UUID,
+        prompt: Prompt,
+        model: str,
+        brands: list[Brand],
+        llm_provider,
     ):
         async with self.semaphore:
             # Rate limiting delay
@@ -98,7 +120,7 @@ class Orchestrator:
 
                 try:
                     # Call LLM
-                    llm_response = await self.llm_provider.generate(prompt.text, model)
+                    llm_response = await llm_provider.generate(prompt.text, model)
 
                     # Analyze Response
                     mentions_data = self._analyze_mentions(llm_response.text, brands)

@@ -15,6 +15,8 @@ from app.features.runs.schemas import (
 )
 from app.features.runs.service import Orchestrator
 from app.infrastructure.llm.client import get_llm_provider
+from app.features.settings.models import ApiKey
+from app.infrastructure.security import decrypt_value
 
 router = APIRouter(tags=["Runs"])
 
@@ -24,8 +26,12 @@ router = APIRouter(tags=["Runs"])
     summary="List available models",
     description="Fetch available models from all configured providers.",
 )
-async def list_models():
-    provider = get_llm_provider()
+async def list_models(db: AsyncSession = Depends(get_db)):
+    # Fetch keys from DB
+    result = await db.execute(select(ApiKey))
+    keys = {k.provider: decrypt_value(k.api_key) for k in result.scalars().all()}
+
+    provider = get_llm_provider(api_keys=keys)
     # The MultiProviderRouter has a list_models method
     if hasattr(provider, "list_models"):
         return await provider.list_models()

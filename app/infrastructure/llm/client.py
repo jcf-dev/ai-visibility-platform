@@ -91,8 +91,8 @@ class OpenAILLMProvider:
     Requires OPENAI_API_KEY in settings.
     """
 
-    def __init__(self):
-        self.api_key = settings.OPENAI_API_KEY
+    def __init__(self, api_key: str = None):
+        self.api_key = api_key or settings.OPENAI_API_KEY
         self.base_url = "https://api.openai.com/v1/chat/completions"
         self.models_url = "https://api.openai.com/v1/models"
 
@@ -161,8 +161,8 @@ class GeminiLLMProvider:
     Requires GEMINI_API_KEY in settings.
     """
 
-    def __init__(self):
-        self.api_key = settings.GEMINI_API_KEY
+    def __init__(self, api_key: str = None):
+        self.api_key = api_key or settings.GEMINI_API_KEY
         # Note: The base URL for generation is slightly different than listing models
         # But we construct the full URL in generate()
         self.base_url = "https://generativelanguage.googleapis.com/v1beta/models"
@@ -246,15 +246,81 @@ class GeminiLLMProvider:
             )
 
 
+class AnthropicLLMProvider:
+    """
+    Implementation for Anthropic API.
+    Requires ANTHROPIC_API_KEY.
+    """
+
+    def __init__(self, api_key: str = None):
+        self.api_key = api_key or settings.ANTHROPIC_API_KEY
+        self.base_url = "https://api.anthropic.com/v1/messages"
+
+    async def list_models(self) -> list[str]:
+        if not self.api_key:
+            return []
+        # Anthropic doesn't have a public list models endpoint that is easily accessible
+        # without an SDK or scraping, but we can return common ones if key is present.
+        return [
+            "claude-3-opus-20240229",
+            "claude-3-sonnet-20240229",
+            "claude-3-haiku-20240307",
+        ]
+
+    @retry(
+        stop=stop_after_attempt(3),
+        wait=wait_exponential(multiplier=1, min=2, max=10),
+        retry=retry_if_exception_type(Exception)
+        & retry_if_exception(is_retryable_error),
+        reraise=True,
+    )
+    async def generate(self, prompt: str, model: str) -> LLMResponse:
+        if not self.api_key:
+            raise ValueError("ANTHROPIC_API_KEY is not set")
+
+        start_time = asyncio.get_event_loop().time()
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                self.base_url,
+                headers={
+                    "x-api-key": self.api_key,
+                    "anthropic-version": "2023-06-01",
+                    "content-type": "application/json",
+                },
+                json={
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": 1024,
+                },
+                timeout=settings.REQUEST_TIMEOUT_SECONDS,
+            )
+            response.raise_for_status()
+            data = response.json()
+
+            end_time = asyncio.get_event_loop().time()
+            latency_ms = (end_time - start_time) * 1000
+
+            text = data["content"][0]["text"]
+
+            return LLMResponse(
+                text=text, latency_ms=latency_ms, metadata={"usage": data.get("usage")}
+            )
+
+
 class MultiProviderRouter:
     """
     Routes requests to the appropriate provider based on model name or configuration.
     """
 
-    def __init__(self):
+    def __init__(self, api_keys: Dict[str, str] = None):
+        self.api_keys = api_keys or {}
+
+        # Initialize providers with keys if available
         self.providers = {
-            "openai": OpenAILLMProvider(),
-            "gemini": GeminiLLMProvider(),
+            "openai": OpenAILLMProvider(api_key=self.api_keys.get("openai")),
+            "gemini": GeminiLLMProvider(api_key=self.api_keys.get("gemini")),
+            "anthropic": AnthropicLLMProvider(api_key=self.api_keys.get("anthropic")),
             "mock": MockLLMProvider(),
         }
         self.default_provider = settings.LLM_PROVIDER
@@ -265,6 +331,8 @@ class MultiProviderRouter:
             return await self.providers["openai"].generate(prompt, model)
         elif model.startswith("gemini"):
             return await self.providers["gemini"].generate(prompt, model)
+        elif model.startswith("claude"):
+            return await self.providers["anthropic"].generate(prompt, model)
         elif model.startswith("mock"):
             return await self.providers["mock"].generate(prompt, model)
 
@@ -282,9 +350,24 @@ class MultiProviderRouter:
         names = []
 
         for name, provider in self.providers.items():
-            if hasattr(provider, "list_models"):
-                names.append(name)
-                tasks.append(provider.list_models())
+            # Only list models if provider has a key (or is mock)
+            if name == "mock" or (hasattr(provider, "api_key") and provider.api_key):
+                if hasattr(provider, "list_models"):
+                    names.append(name)
+                    tasks.append(provider.list_models())
+
+        # If no keys provided at all, return mock models as fallback?
+        # "If all are not supplied, use mock."
+        has_keys = any(
+            p.api_key
+            for n, p in self.providers.items()
+            if n != "mock" and hasattr(p, "api_key")
+        )
+        if not has_keys and not tasks:
+            # If no keys are set, we might want to show mock models if not already shown
+            if "mock" not in names:
+                names.append("mock")
+                tasks.append(self.providers["mock"].list_models())
 
         if tasks:
             lists = await asyncio.gather(*tasks, return_exceptions=True)
@@ -297,6 +380,6 @@ class MultiProviderRouter:
         return results
 
 
-def get_llm_provider(provider_name: str = settings.LLM_PROVIDER) -> LLMProvider:
+def get_llm_provider(api_keys: Dict[str, str] = None) -> LLMProvider:
     # Always return the router, which handles the logic
-    return MultiProviderRouter()
+    return MultiProviderRouter(api_keys=api_keys)

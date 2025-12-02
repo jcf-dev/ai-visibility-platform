@@ -24,6 +24,7 @@ async def init_db():
     # Import models to ensure they are registered with Base.metadata
     # This prevents "no such table" errors if models haven't been imported yet
     import app.features.runs.models  # noqa: F401
+    import app.features.settings.models  # noqa: F401
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

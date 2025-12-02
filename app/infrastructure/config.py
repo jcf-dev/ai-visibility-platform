@@ -7,10 +7,14 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite+aiosqlite:///./ai_visibility.db"
 
     # LLM Configuration (Mock by default)
-    LLM_PROVIDER: str = "mock"  # options: mock, openai, gemini, auto
+    LLM_PROVIDER: str = "mock"  # options: mock, openai, gemini, anthropic, auto
     OPENAI_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
     GEMINI_API_KEY: Optional[str] = None
+
+    # Security
+    # Default key for dev only. In production, set this env var!
+    ENCRYPTION_KEY: str = "hXuDf7um-27AICHTn63NbZg1Xlx-XgPnSEtq768l05g="
 
     # Rate Limiting
     MAX_CONCURRENT_REQUESTS: int = 5

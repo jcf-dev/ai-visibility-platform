@@ -35,7 +35,8 @@ async def test_idempotency():
     )
 
     orchestrator = Orchestrator(AsyncSessionLocal)
-    orchestrator.llm_provider = mock_provider
+    # Mock the internal method to return our mock provider
+    orchestrator._get_configured_llm_provider = AsyncMock(return_value=mock_provider)
 
     # 3. Run Orchestrator First Time
     await orchestrator.process_run(run_id, ["mock-model"])
@@ -65,7 +66,8 @@ async def test_error_handling():
     mock_provider.generate.side_effect = Exception("LLM Failed")
 
     orchestrator = Orchestrator(AsyncSessionLocal)
-    orchestrator.llm_provider = mock_provider
+    # Mock the internal method to return our mock provider
+    orchestrator._get_configured_llm_provider = AsyncMock(return_value=mock_provider)
 
     # 3. Run Orchestrator
     await orchestrator.process_run(run_id, ["mock-model"])

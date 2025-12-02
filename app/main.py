@@ -1,7 +1,8 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
-from app.features.runs.router import router
+from app.features.runs.router import router as runs_router
+from app.features.settings.router import router as settings_router
 from app.infrastructure.database import init_db
 from app.infrastructure.config import settings
 
@@ -16,6 +17,10 @@ tags_metadata = [
     {
         "name": "Runs",
         "description": "Operations to manage and analyze visibility runs.",
+    },
+    {
+        "name": "Settings",
+        "description": "Configuration and API key management.",
     },
 ]
 
@@ -36,7 +41,8 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-app.include_router(router, prefix="/api")
+app.include_router(runs_router, prefix="/api")
+app.include_router(settings_router, prefix="/api")
 
 
 @app.get("/")
