@@ -153,7 +153,7 @@ If this system had to handle 100k prompts/day across multiple models, here's wha
 
 ## Current Reliability Features
 
-- **Idempotency**: Runs are unique entities. Re-running the same config creates a new Run ID.
+- **Idempotency & Deduplication**: The system calculates a hash of the run inputs. Re-submitting the exact same configuration returns the existing run instead of starting a new one.
 - **Retries**: Network glitches are handled by `tenacity` with exponential backoff.
 - **Timeouts**: `httpx` timeouts ensure we don't hang forever.
 - **Concurrency Control**: Uses `asyncio.Semaphore` to limit parallel LLM calls within a single instance.
