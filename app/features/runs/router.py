@@ -121,6 +121,26 @@ async def create_run(
 
 
 @router.get(
+    "/runs",
+    response_model=list[RunRead],
+    summary="List all runs",
+    description="Retrieve a list of all runs, ordered by creation date descending.",
+)
+async def list_runs(
+    skip: int = 0, limit: int = 100, db: AsyncSession = Depends(get_db)
+):
+    query = (
+        select(Run)
+        .options(selectinload(Run.brands), selectinload(Run.prompts))
+        .order_by(Run.created_at.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
+@router.get(
     "/runs/{run_id}",
     response_model=RunDetail,
     summary="Get run details",

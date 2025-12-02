@@ -68,6 +68,15 @@ A minimal engine to track brand visibility across LLM responses.
    uvicorn app.main:app --reload
    ```
 
+4. **Run the Frontend**:
+   Open a new terminal:
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) in your browser.
+
 ## Usage
 
 ### 1. Start a Run
