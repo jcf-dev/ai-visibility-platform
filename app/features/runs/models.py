@@ -7,16 +7,18 @@ from sqlalchemy import (
     Boolean,
     Text,
     Float,
+    Uuid,
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.infrastructure.database import Base
+import uuid
 
 
 class Run(Base):
     __tablename__ = "runs"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Uuid, primary_key=True, index=True, default=uuid.uuid4)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     status = Column(String, default="pending")  # pending, running, completed, failed
     notes = Column(String, nullable=True)
@@ -32,7 +34,7 @@ class Brand(Base):
     __tablename__ = "brands"
 
     id = Column(Integer, primary_key=True, index=True)
-    run_id = Column(Integer, ForeignKey("runs.id"))
+    run_id = Column(Uuid, ForeignKey("runs.id"))
     name = Column(String, index=True)
 
     run = relationship("Run", back_populates="brands")
@@ -43,7 +45,7 @@ class Prompt(Base):
     __tablename__ = "prompts"
 
     id = Column(Integer, primary_key=True, index=True)
-    run_id = Column(Integer, ForeignKey("runs.id"))
+    run_id = Column(Uuid, ForeignKey("runs.id"))
     text = Column(Text)
 
     run = relationship("Run", back_populates="prompts")
@@ -54,7 +56,7 @@ class Response(Base):
     __tablename__ = "responses"
 
     id = Column(Integer, primary_key=True, index=True)
-    run_id = Column(Integer, ForeignKey("runs.id"))
+    run_id = Column(Uuid, ForeignKey("runs.id"))
     prompt_id = Column(Integer, ForeignKey("prompts.id"))
     model = Column(String)
     latency_ms = Column(Float)

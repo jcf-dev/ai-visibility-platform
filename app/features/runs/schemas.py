@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 from datetime import datetime
+from uuid import UUID
 
 # --- Input Schemas ---
 
@@ -46,7 +47,7 @@ class ResponseRead(BaseModel):
 
 
 class RunRead(BaseModel):
-    id: int
+    id: UUID
     created_at: datetime
     status: str
     notes: Optional[str]
@@ -73,7 +74,7 @@ class BrandVisibilityMetric(BaseModel):
 
 
 class RunSummary(BaseModel):
-    run_id: int
+    run_id: UUID
     status: str
     total_prompts: int
     total_responses: int

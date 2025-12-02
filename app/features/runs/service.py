@@ -3,6 +3,7 @@ import logging
 import httpx
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
+from uuid import UUID
 from app.features.runs.models import Run, Prompt, Brand, Response, ResponseBrandMention
 from app.infrastructure.llm.client import get_llm_provider
 from app.infrastructure.config import settings
@@ -16,7 +17,7 @@ class Orchestrator:
         self.llm_provider = get_llm_provider()
         self.semaphore = asyncio.Semaphore(settings.MAX_CONCURRENT_REQUESTS)
 
-    async def process_run(self, run_id: int, models: list[str]):
+    async def process_run(self, run_id: UUID, models: list[str]):
         """
         Main entry point to process a run in the background.
         """
@@ -68,7 +69,7 @@ class Orchestrator:
             logger.info(f"Run {run_id} completed. Failed tasks: {failed_count}")
 
     async def _process_single_prompt(
-        self, run_id: int, prompt: Prompt, model: str, brands: list[Brand]
+        self, run_id: UUID, prompt: Prompt, model: str, brands: list[Brand]
     ):
         async with self.semaphore:
             # We create a NEW session for each task or small batch to avoid

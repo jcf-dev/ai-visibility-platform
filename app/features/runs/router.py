@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
+from uuid import UUID, uuid4
 
 from app.infrastructure.database import get_db, AsyncSessionLocal
 from app.features.runs.models import Run, Brand, Prompt, Response, ResponseBrandMention
@@ -46,7 +47,7 @@ async def create_run(
     db: AsyncSession = Depends(get_db),
 ):
     # 1. Create Run Record
-    new_run = Run(notes=run_in.notes, status="pending")
+    new_run = Run(id=uuid4(), notes=run_in.notes, status="pending")
     db.add(new_run)
     await db.flush()  # Get ID
 
@@ -83,7 +84,7 @@ async def create_run(
         "Retrieve full details of a run, including all responses and brand mentions."
     ),
 )
-async def get_run(run_id: int, db: AsyncSession = Depends(get_db)):
+async def get_run(run_id: UUID, db: AsyncSession = Depends(get_db)):
     query = (
         select(Run)
         .options(
@@ -145,7 +146,7 @@ async def get_run(run_id: int, db: AsyncSession = Depends(get_db)):
     summary="Get run summary",
     description="Get aggregated visibility metrics for a specific run.",
 )
-async def get_run_summary(run_id: int, db: AsyncSession = Depends(get_db)):
+async def get_run_summary(run_id: UUID, db: AsyncSession = Depends(get_db)):
     # Check if run exists
     run = await db.get(Run, run_id)
     if not run:
