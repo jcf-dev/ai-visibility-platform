@@ -143,6 +143,7 @@ If this system had to handle 100k prompts/day across multiple models, here's wha
 1.  **Queue-Based Architecture**: Replace the in-memory `asyncio` tasks with a durable job queue (e.g., Celery with Redis/RabbitMQ or AWS SQS). This ensures tasks persist across server restarts and allows independent scaling of workers.
 2.  **Distributed Rate Limiting**: Move from a local semaphore to a distributed rate limiter (e.g., using Redis) to coordinate limits across multiple worker instances and respect strict provider quotas (TPM/RPM).
 3.  **Database Optimization**:
+    *   **Already Implemented**: Shared `Brand` and `Prompt` tables reduce storage redundancy.
     *   Use batch inserts for `Response` and `ResponseBrandMention` records instead of inserting one by one.
     *   Add database indexes on frequently queried fields (e.g., `run_id`, `created_at`) to speed up reporting.
     *   Consider a read replica for heavy reporting queries.
