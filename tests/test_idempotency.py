@@ -6,6 +6,7 @@ from app.infrastructure.database import AsyncSessionLocal, engine, Base
 from sqlalchemy import select
 from app.infrastructure.llm.client import LLMResponse
 
+
 @pytest.fixture(autouse=True)
 async def setup_db():
     async with engine.begin() as conn:
@@ -13,6 +14,7 @@ async def setup_db():
     yield
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+
 
 @pytest.mark.asyncio
 async def test_idempotency():
@@ -39,9 +41,10 @@ async def test_idempotency():
 
     # 4. Run Orchestrator Second Time
     await orchestrator.process_run(run_id, ["mock-model"])
-    
+
     # 5. Verify LLM was NOT called again
     assert mock_provider.generate.call_count == 1
+
 
 @pytest.mark.asyncio
 async def test_error_handling():
