@@ -22,7 +22,7 @@ interface RunDetail {
     model: string;
     latency_ms: number;
     raw_text: string;
-    mentions: { brand_name: string; mentioned: boolean }[];
+    mentions: { brand_name: string; mentioned: boolean; count: number }[];
     error?: string;
   }[];
 }
@@ -34,6 +34,7 @@ interface RunSummary {
     brand_name: string;
     total_prompts: number;
     mentions: number;
+    total_mentions_count: number;
     visibility_score: number;
   }[];
 }
@@ -162,7 +163,10 @@ export default function RunDetailsPage() {
                   {summary.metrics.map((metric) => (
                     <div key={metric.brand_name} className="px-4 py-3 flex items-center justify-between">
                       <span className="font-medium">{metric.brand_name}</span>
-                      <span className="font-bold">{metric.visibility_score.toFixed(1)}%</span>
+                      <div className="flex items-center gap-4">
+                        <span className="text-muted-foreground text-xs">Count: {metric.total_mentions_count}</span>
+                        <span className="font-bold">{metric.visibility_score.toFixed(1)}%</span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -219,7 +223,7 @@ export default function RunDetailsPage() {
                       key={m.brand_name}
                       variant={m.mentioned ? "default" : "secondary"}
                     >
-                      {m.brand_name}: {m.mentioned ? "Yes" : "No"}
+                      {m.brand_name}: {m.count}
                     </Badge>
                   ))}
                 </div>

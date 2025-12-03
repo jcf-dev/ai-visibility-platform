@@ -177,6 +177,7 @@ async def get_run(run_id: UUID, db: AsyncSession = Depends(get_db)):
                 {
                     "brand_name": m.brand.name if m.brand else "Unknown",
                     "mentioned": m.mentioned,
+                    "count": m.count,
                     "position_index": m.position_index,
                 }
             )
@@ -256,12 +257,13 @@ async def get_run_summary(run_id: UUID, db: AsyncSession = Depends(get_db)):
                     brand_name=brand.name,
                     total_prompts=total_prompts,
                     mentions=0,
+                    total_mentions_count=0,
                     visibility_score=0.0,
                 )
             )
     else:
         for brand in brands:
-            # Count mentions
+            # Count mentions (responses where brand is mentioned)
             mentions_count_query = (
                 select(func.count(ResponseBrandMention.id))
                 .join(Response)
@@ -273,11 +275,23 @@ async def get_run_summary(run_id: UUID, db: AsyncSession = Depends(get_db)):
             )
             mentions_count = (await db.execute(mentions_count_query)).scalar() or 0
 
+            # Total count of mentions (sum of counts in all responses)
+            total_mentions_count_query = (
+                select(func.sum(ResponseBrandMention.count))
+                .join(Response)
+                .where(
+                    Response.run_id == run_id,
+                    ResponseBrandMention.brand_id == brand.id,
+                )
+            )
+            total_mentions_count = (await db.execute(total_mentions_count_query)).scalar() or 0
+
             metrics.append(
                 BrandVisibilityMetric(
                     brand_name=brand.name,
                     total_prompts=total_prompts,
                     mentions=mentions_count,
+                    total_mentions_count=total_mentions_count,
                     visibility_score=(mentions_count / total_responses) * 100.0,
                 )
             )

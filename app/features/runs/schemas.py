@@ -33,6 +33,7 @@ class PromptRead(BaseModel):
 class ResponseBrandMentionRead(BaseModel):
     brand_name: str
     mentioned: bool
+    count: int
     position_index: Optional[int]
 
 
@@ -70,6 +71,7 @@ class BrandVisibilityMetric(BaseModel):
     brand_name: str
     total_prompts: int
     mentions: int
+    total_mentions_count: int
     visibility_score: float  # percentage
 
 

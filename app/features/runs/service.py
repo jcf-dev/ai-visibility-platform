@@ -155,6 +155,7 @@ class Orchestrator:
                             response_id=response_entry.id,
                             brand_id=m["brand_id"],
                             mentioned=m["mentioned"],
+                            count=m["count"],
                             position_index=m["position_index"],
                         )
                         session.add(mention_entry)
@@ -194,11 +195,13 @@ class Orchestrator:
         text_lower = text.lower()
         for brand in brands:
             brand_lower = brand.name.lower()
+            count = text_lower.count(brand_lower)
             index = text_lower.find(brand_lower)
             results.append(
                 {
                     "brand_id": brand.id,
-                    "mentioned": index != -1,
+                    "mentioned": count > 0,
+                    "count": count,
                     "position_index": index if index != -1 else None,
                 }
             )

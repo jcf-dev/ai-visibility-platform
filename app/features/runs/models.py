@@ -94,6 +94,7 @@ class ResponseBrandMention(Base):
     response_id = Column(Integer, ForeignKey("responses.id"))
     brand_id = Column(Integer, ForeignKey("brands.id"))
     mentioned = Column(Boolean, default=False)
+    count = Column(Integer, default=0)
     position_index = Column(Integer, nullable=True)  # -1 or null if not found
 
     response = relationship("Response", back_populates="mentions")
