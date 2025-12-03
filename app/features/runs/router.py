@@ -7,7 +7,15 @@ import hashlib
 import json
 
 from app.infrastructure.database import get_db, AsyncSessionLocal
-from app.features.runs.models import Run, Brand, Prompt, Response, ResponseBrandMention, run_brands, run_prompts
+from app.features.runs.models import (
+    Run,
+    Brand,
+    Prompt,
+    Response,
+    ResponseBrandMention,
+    run_brands,
+    run_prompts,
+)
 from app.features.runs.service import get_or_create_brand, get_or_create_prompt
 from app.features.runs.schemas import (
     RunCreate,
@@ -35,7 +43,9 @@ async def list_models():
     return {}
 
 
-def _calculate_input_hash(brands: list[str], prompts: list[str], models: list[str]) -> str:
+def _calculate_input_hash(
+    brands: list[str], prompts: list[str], models: list[str]
+) -> str:
     data = {
         "brands": sorted(brands),
         "prompts": sorted(prompts),
@@ -94,7 +104,7 @@ async def create_run(
         await db.execute(
             insert(run_brands).values(run_id=new_run.id, brand_id=brand.id)
         )
-    
+
     for prompt_text in run_in.prompts:
         prompt = await get_or_create_prompt(db, prompt_text)
         # Insert into association table
@@ -232,7 +242,9 @@ async def get_run_summary(run_id: UUID, db: AsyncSession = Depends(get_db)):
     # We need to join tables.
 
     # 1. Get Brands
-    brands_result = await db.execute(select(Brand).join(Brand.runs).where(Run.id == run_id))
+    brands_result = await db.execute(
+        select(Brand).join(Brand.runs).where(Run.id == run_id)
+    )
     brands = brands_result.scalars().all()
 
     # 2. Get Counts
@@ -247,7 +259,9 @@ async def get_run_summary(run_id: UUID, db: AsyncSession = Depends(get_db)):
     total_responses = (await db.execute(total_responses_query)).scalar() or 0
 
     # Total prompts configured
-    total_prompts_query = select(func.count(Prompt.id)).join(Prompt.runs).where(Run.id == run_id)
+    total_prompts_query = (
+        select(func.count(Prompt.id)).join(Prompt.runs).where(Run.id == run_id)
+    )
     total_prompts = (await db.execute(total_prompts_query)).scalar() or 0
 
     if total_responses == 0:
@@ -284,7 +298,9 @@ async def get_run_summary(run_id: UUID, db: AsyncSession = Depends(get_db)):
                     ResponseBrandMention.brand_id == brand.id,
                 )
             )
-            total_mentions_count = (await db.execute(total_mentions_count_query)).scalar() or 0
+            total_mentions_count = (
+                await db.execute(total_mentions_count_query)
+            ).scalar() or 0
 
             metrics.append(
                 BrandVisibilityMetric(

@@ -18,10 +18,10 @@ async def get_or_create_brand(db: AsyncSession, name: str) -> Brand:
     stmt = select(Brand).where(sqlfunc.lower(Brand.name) == name.lower())
     result = await db.execute(stmt)
     brand = result.scalars().first()
-    
+
     if brand:
         return brand
-    
+
     # Create new brand
     brand = Brand(name=name)
     db.add(brand)
@@ -35,10 +35,10 @@ async def get_or_create_prompt(db: AsyncSession, text: str) -> Prompt:
     stmt = select(Prompt).where(sqlfunc.lower(Prompt.text) == text.lower())
     result = await db.execute(stmt)
     prompt = result.scalars().first()
-    
+
     if prompt:
         return prompt
-    
+
     # Create new prompt
     prompt = Prompt(text=text)
     db.add(prompt)

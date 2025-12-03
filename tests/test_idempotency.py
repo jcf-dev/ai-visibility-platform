@@ -1,7 +1,14 @@
 import pytest
 from unittest.mock import AsyncMock
 from app.features.runs.service import Orchestrator
-from app.features.runs.models import Run, Brand, Prompt, Response, run_brands, run_prompts
+from app.features.runs.models import (
+    Run,
+    Brand,
+    Prompt,
+    Response,
+    run_brands,
+    run_prompts,
+)
 from app.infrastructure.database import AsyncSessionLocal, engine, Base
 from sqlalchemy import select, insert
 from app.infrastructure.llm.client import LLMResponse
@@ -23,18 +30,22 @@ async def test_idempotency():
         run = Run(status="pending")
         session.add(run)
         await session.flush()
-        
+
         brand = Brand(name="Acme")
         session.add(brand)
         await session.flush()
-        
+
         prompt = Prompt(text="Test Prompt")
         session.add(prompt)
         await session.flush()
-        
-        await session.execute(insert(run_brands).values(run_id=run.id, brand_id=brand.id))
-        await session.execute(insert(run_prompts).values(run_id=run.id, prompt_id=prompt.id))
-        
+
+        await session.execute(
+            insert(run_brands).values(run_id=run.id, brand_id=brand.id)
+        )
+        await session.execute(
+            insert(run_prompts).values(run_id=run.id, prompt_id=prompt.id)
+        )
+
         await session.commit()
         run_id = run.id
 
@@ -65,18 +76,22 @@ async def test_error_handling():
         run = Run(status="pending")
         session.add(run)
         await session.flush()
-        
+
         brand = Brand(name="Acme")
         session.add(brand)
         await session.flush()
-        
+
         prompt = Prompt(text="Test Prompt")
         session.add(prompt)
         await session.flush()
-        
-        await session.execute(insert(run_brands).values(run_id=run.id, brand_id=brand.id))
-        await session.execute(insert(run_prompts).values(run_id=run.id, prompt_id=prompt.id))
-        
+
+        await session.execute(
+            insert(run_brands).values(run_id=run.id, brand_id=brand.id)
+        )
+        await session.execute(
+            insert(run_prompts).values(run_id=run.id, prompt_id=prompt.id)
+        )
+
         await session.commit()
         run_id = run.id
 

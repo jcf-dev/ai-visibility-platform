@@ -26,14 +26,18 @@ async def test_orchestrator_flow():
         brand = Brand(name="Acme")
         session.add(brand)
         await session.flush()
-        
+
         prompt = Prompt(text="Test Prompt")
         session.add(prompt)
         await session.flush()
-        
-        await session.execute(insert(run_brands).values(run_id=run.id, brand_id=brand.id))
-        await session.execute(insert(run_prompts).values(run_id=run.id, prompt_id=prompt.id))
-        
+
+        await session.execute(
+            insert(run_brands).values(run_id=run.id, brand_id=brand.id)
+        )
+        await session.execute(
+            insert(run_prompts).values(run_id=run.id, prompt_id=prompt.id)
+        )
+
         await session.commit()
         run_id = run.id
 
@@ -64,14 +68,18 @@ async def test_orchestrator_multi_model():
         brand = Brand(name="Acme")
         session.add(brand)
         await session.flush()
-        
+
         prompt = Prompt(text="Test Prompt")
         session.add(prompt)
         await session.flush()
-        
-        await session.execute(insert(run_brands).values(run_id=run.id, brand_id=brand.id))
-        await session.execute(insert(run_prompts).values(run_id=run.id, prompt_id=prompt.id))
-        
+
+        await session.execute(
+            insert(run_brands).values(run_id=run.id, brand_id=brand.id)
+        )
+        await session.execute(
+            insert(run_prompts).values(run_id=run.id, prompt_id=prompt.id)
+        )
+
         await session.commit()
         run_id = run.id
 
